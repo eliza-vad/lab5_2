@@ -2,26 +2,38 @@ package domain;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 public class Report {
-    private long id;
+    private UUID id;
     private String name;
-    private long sampleId;
-    private long experimentId;
+    private UUID sampleId;
+    private UUID experimentId;
     private ReportStatus status;
     private String ownerUsername;
     private String signedBy;
     private Instant createdAt;
     private Instant updatedAt;
 
+    // Пустой конструктор (оставляем для совместимости)
     public Report() {
     }
 
-    public long getId() {
+    public Report(UUID id, String name, UUID sampleId, ReportStatus status, String ownerUsername, Instant createdAt, Instant updatedAt) {
+        this.id = id;
+        this.name = name;
+        this.sampleId = sampleId;
+        this.status = status;
+        this.ownerUsername = ownerUsername;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
+    public UUID getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
@@ -33,19 +45,19 @@ public class Report {
         this.name = name;
     }
 
-    public long getSampleId() {
+    public UUID getSampleId() {
         return sampleId;
     }
 
-    public void setSampleId(long sampleId) {
+    public void setSampleId(UUID sampleId) {
         this.sampleId = sampleId;
     }
 
-    public long getExperimentId() {
+    public UUID getExperimentId() {
         return experimentId;
     }
 
-    public void setExperimentId(long experimentId) {
+    public void setExperimentId(UUID experimentId) {
         this.experimentId = experimentId;
     }
 
@@ -94,7 +106,7 @@ public class Report {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Report report = (Report) o;
-        return id == report.id;
+        return Objects.equals(id, report.id);
     }
 
     @Override
