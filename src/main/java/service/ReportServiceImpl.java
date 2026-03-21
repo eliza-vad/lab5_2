@@ -27,7 +27,6 @@ public class ReportServiceImpl implements ReportService {
     public Report createSampleReport(UUID sampleId, String name, String username) {
         if (sampleId == null) throw new ValidationException("Ошибка: sampleId не может быть null");
 
-
         Report report = new Report(
                 UUID.randomUUID(),
                 name,
@@ -57,6 +56,17 @@ public class ReportServiceImpl implements ReportService {
         }
         return report;
     }
+    @Override
+    public void deleteReport(UUID reportId) {
+        Report report = getReportById(reportId);
+
+        Set<ReportLine> lines = getLinesByReportId(reportId);
+        for (ReportLine line : lines) {
+            reportLineRepository.delete(line);
+        }
+
+        reportRepository.delete(report);
+    }
 
     @Override
     public ReportLine addReportLine(UUID reportId, MeasurementParam param, double value, String unit) {
@@ -84,7 +94,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public Set<ReportLine> getLinesByReportId(UUID reportId) {
-        getReportById(reportId);
+        getReportById(reportId); // Проверяем, существует ли отчет
         return reportLineRepository.findByReportId(reportId);
     }
 
@@ -136,6 +146,7 @@ public class ReportServiceImpl implements ReportService {
         }
         report.setStatus(ReportStatus.FINAL);
         report.setUpdatedAt(Instant.now());
+        Validator.validateReport(report);
     }
 
     @Override
@@ -150,5 +161,6 @@ public class ReportServiceImpl implements ReportService {
         report.setStatus(ReportStatus.SIGNED);
         report.setSignedBy(username);
         report.setUpdatedAt(Instant.now());
+        Validator.validateReport(report);
     }
 }

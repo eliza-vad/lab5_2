@@ -3,6 +3,7 @@ package command;
 import domain.Report;
 import service.ReportService;
 import java.util.Scanner;
+import java.util.Set;
 
 public class ListReportsCommand implements Command {
     private final ReportService service;
@@ -13,10 +14,25 @@ public class ListReportsCommand implements Command {
 
     @Override
     public void execute(String[] args, Scanner scanner) {
-        System.out.println("ID Name Status");
-        for (Report r : service.getAllReports()) {
-            System.out.println(r.getId() + " " + r.getName() + " " + r.getStatus());
+        Set<Report> reports = service.getAllReports();
+
+        if (reports.isEmpty()) {
+            System.out.println("Нет созданных отчетов.");
+            return;
         }
+
+        System.out.println("-------------------------------------------------------------------------------------------------");
+        System.out.printf("%-40s | %-20s | %-12s | %-15s%n", "ID отчета", "Название", "Статус", "Создатель");
+        System.out.println("-------------------------------------------------------------------------------------------------");
+
+        for (Report r : reports) {
+            System.out.printf("%-40s | %-20s | %-12s | %-15s%n",
+                    r.getId().toString(),
+                    r.getName(),
+                    r.getStatus().toString(),
+                    r.getCreatedBy());
+        }
+        System.out.println("-------------------------------------------------------------------------------------------------");
     }
 
     @Override

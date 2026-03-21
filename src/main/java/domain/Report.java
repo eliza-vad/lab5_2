@@ -41,24 +41,12 @@ public class Report {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public UUID getSampleId() {
         return sampleId;
     }
 
-    public void setSampleId(UUID sampleId) {
-        this.sampleId = sampleId;
-    }
-
     public UUID getExperimentId() {
         return experimentId;
-    }
-
-    public void setExperimentId(UUID experimentId) {
-        this.experimentId = experimentId;
     }
 
     public ReportStatus getStatus() {
@@ -73,10 +61,6 @@ public class Report {
         return ownerUsername;
     }
 
-    public void setOwnerUsername(String ownerUsername) {
-        this.ownerUsername = ownerUsername;
-    }
-
     public String getSignedBy() {
         return signedBy;
     }
@@ -87,10 +71,6 @@ public class Report {
 
     public Instant getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
     }
 
     public Instant getUpdatedAt() {
@@ -112,5 +92,9 @@ public class Report {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    public Object getCreatedBy() {
+        return null;
     }
 }

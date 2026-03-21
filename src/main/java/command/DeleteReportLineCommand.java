@@ -15,12 +15,13 @@ public class DeleteReportLineCommand implements Command {
     @Override
     public void execute(String[] args, Scanner scanner) throws Exception {
         if (args.length < 2) {
-            throw new ValidationException("Ошибка: укажите line_id");
+            throw new ValidationException("Ошибка: укажите line_id (в формате UUID)");
         }
 
-        long lineId = Long.parseLong(args[1]);
-        service.deleteReportLine(UUID.fromString(String.valueOf(lineId)));
-        System.out.println("OK deleted");
+        UUID lineId = UUID.fromString(args[1]);
+        service.deleteReportLine(lineId);
+
+        System.out.println("OK: строка " + lineId + " удалена.");
     }
 
     @Override

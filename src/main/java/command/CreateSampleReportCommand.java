@@ -2,7 +2,6 @@ package command;
 
 import domain.Report;
 import service.ReportService;
-import validation.ValidationException;
 
 import java.util.Scanner;
 import java.util.UUID;
@@ -16,27 +15,29 @@ public class CreateSampleReportCommand implements Command {
 
     @Override
     public void execute(String[] args, Scanner scanner) throws Exception {
-        if (args.length < 3) {
-            throw new ValidationException("Ошибка: укажите sample_id и username");
-        }
+        System.out.println("=== Интерактивное создание отчета ===");
 
-        UUID sampleId = UUID.fromString(args[1]);
-        String username = args[2];
+        UUID sampleId = UUID.randomUUID();
 
-        System.out.print("Название отчёта: ");
+        System.out.print("Введите ваше имя (username): ");
+        String username = scanner.nextLine().trim();
+
+        System.out.print("Введите название отчёта: ");
         String name = scanner.nextLine().trim();
 
         Report report = service.createSampleReport(sampleId, name, username);
-        System.out.println("OK report_id=" + report.getId());
+        System.out.println("OK: Отчет успешно создан!");
+        System.out.println("ID вашего нового отчета: " + report.getId());
+        System.out.println("Связанный sample_id: " + sampleId);
     }
 
     @Override
     public String getDescription() {
-        return "Создать отчет по образцу";
+        return "Создать отчет (интерактивный режим)";
     }
 
     @Override
     public String getUsage() {
-        return "rep_create_sample <sample_id> <username>";
+        return "rep_create_sample";
     }
 }

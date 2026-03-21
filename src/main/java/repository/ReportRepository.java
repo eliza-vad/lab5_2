@@ -8,4 +8,6 @@ public interface ReportRepository {
     void save(Report report);
     Report findById(UUID id);
     Set<Report> findAll();
+
+    void delete(Report report);
 }

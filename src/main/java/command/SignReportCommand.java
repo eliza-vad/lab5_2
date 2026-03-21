@@ -19,11 +19,9 @@ public class SignReportCommand implements Command {
             throw new ValidationException("Ошибка: укажите report_id и username");
         }
 
-        // Считываем ID как UUID, а не как long
         UUID reportId = UUID.fromString(args[1]);
         String signer = args[2];
 
-        // Передаем объект UUID напрямую в сервис
         service.signReport(reportId, signer);
         System.out.println("OK report " + reportId + " SIGNED by " + signer);
     }

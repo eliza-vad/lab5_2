@@ -28,4 +28,9 @@ public class InMemoryReportRepository implements ReportRepository {
     public Set<Report> findAll() {
         return reports;
     }
+
+    @Override
+    public void delete(Report report) {
+        reports.remove(report);
+    }
 }
