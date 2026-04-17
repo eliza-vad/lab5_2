@@ -61,7 +61,7 @@
                     <execution>
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>ui.MainFxApp</mainClass>
+                            <mainClass>app.MainFxApp</mainClass>
                             <launcher>app</launcher>
                         </configuration>
                     </execution>

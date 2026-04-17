@@ -1,4 +1,4 @@
-package ui;
+package ui.cell;
 
 import domain.Report;
 import javafx.geometry.Insets;
