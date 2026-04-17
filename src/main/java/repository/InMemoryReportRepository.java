@@ -1,24 +1,43 @@
 package repository;
 
 import domain.Report;
-import java.util.HashSet;
-import java.util.Objects;
+
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
 public class InMemoryReportRepository implements ReportRepository {
-    private final Set<Report> reports = new HashSet<>();
+
+    private final Set<Report> reports = new LinkedHashSet<>();
 
     @Override
-    public void save(Report report) {
+    public Report save(Report report) {
+        if (report == null) {
+            return null;
+        }
+
+        reports.removeIf(r -> r.getId().equals(report.getId()));
         reports.add(report);
+        return report;
+    }
+
+    @Override
+    public void delete(Report report) {
+        if (report == null) {
+            return;
+        }
+        reports.removeIf(r -> r.getId().equals(report.getId()));
     }
 
     @Override
     public Report findById(UUID id) {
-        for (Report r : reports) {
-            if (Objects.equals(r.getId(), id)) {
-                return r;
+        if (id == null) {
+            return null;
+        }
+
+        for (Report report : reports) {
+            if (id.equals(report.getId())) {
+                return report;
             }
         }
         return null;
@@ -26,11 +45,11 @@ public class InMemoryReportRepository implements ReportRepository {
 
     @Override
     public Set<Report> findAll() {
-        return reports;
+        return new LinkedHashSet<>(reports);
     }
 
     @Override
-    public void delete(Report report) {
-        reports.remove(report);
+    public void clear() {
+        reports.clear();
     }
 }

@@ -2,6 +2,7 @@ package command;
 
 import domain.Report;
 import service.ReportService;
+
 import java.util.Scanner;
 import java.util.Set;
 
@@ -16,23 +17,26 @@ public class ListReportsCommand implements Command {
     public void execute(String[] args, Scanner scanner) {
         Set<Report> reports = service.getAllReports();
 
-        if (reports.isEmpty()) {
+        if (reports == null || reports.isEmpty()) {
             System.out.println("Нет созданных отчетов.");
             return;
         }
 
-        System.out.println("-------------------------------------------------------------------------------------------------");
-        System.out.printf("%-40s | %-20s | %-12s | %-15s%n", "ID отчета", "Название", "Статус", "Создатель");
-        System.out.println("-------------------------------------------------------------------------------------------------");
+        System.out.println("----------------------------------------------------------------------------------------------------");
+        System.out.printf("%-40s | %-20s | %-12s | %-15s | %-8s%n",
+                "ID отчета", "Название", "Статус", "Владелец", "Строк");
+        System.out.println("----------------------------------------------------------------------------------------------------");
 
         for (Report r : reports) {
-            System.out.printf("%-40s | %-20s | %-12s | %-15s%n",
+            System.out.printf("%-40s | %-20s | %-12s | %-15s | %-8d%n",
                     r.getId().toString(),
-                    r.getName(),
+                    truncate(r.getName(), 20),
                     r.getStatus().toString(),
-                    r.getCreatedBy());
+                    truncate(r.getOwnerUsername(), 15),  // ← ИСПРАВЛЕНО: getOwnerUsername() вместо getCreatedBy()
+                    r.getLines() != null ? r.getLines().size() : 0);
         }
-        System.out.println("-------------------------------------------------------------------------------------------------");
+        System.out.println("----------------------------------------------------------------------------------------------------");
+        System.out.println("Всего отчетов: " + reports.size());
     }
 
     @Override
@@ -43,5 +47,16 @@ public class ListReportsCommand implements Command {
     @Override
     public String getUsage() {
         return "rep_list";
+    }
+
+    // Вспомогательный метод для обрезки длинных строк
+    private String truncate(String str, int maxLength) {
+        if (str == null || str.isEmpty()) {
+            return "—";
+        }
+        if (str.length() <= maxLength) {
+            return str;
+        }
+        return str.substring(0, maxLength - 3) + "...";
     }
 }

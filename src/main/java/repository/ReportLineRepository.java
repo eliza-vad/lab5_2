@@ -1,12 +1,17 @@
 package repository;
 
 import domain.ReportLine;
+
 import java.util.Set;
 import java.util.UUID;
 
 public interface ReportLineRepository {
-    void save(ReportLine line);
+    ReportLine save(ReportLine line);
     void delete(ReportLine line);
     ReportLine findById(UUID id);
+    Set<ReportLine> findAll();
     Set<ReportLine> findByReportId(UUID reportId);
+
+    // ✅ НОВЫЙ МЕТОД
+    void clear();
 }

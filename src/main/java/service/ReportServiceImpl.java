@@ -10,6 +10,7 @@ import validation.ValidationException;
 import validation.Validator;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -25,7 +26,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public Report createSampleReport(UUID sampleId, String name, String username) {
-        if (sampleId == null) throw new ValidationException("Ошибка: sampleId не может быть null");
+        if (sampleId == null) {
+            throw new ValidationException("Ошибка: sampleId не может быть null");
+        }
 
         Report report = new Report(
                 UUID.randomUUID(),
@@ -49,13 +52,18 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     public Report getReportById(UUID reportId) {
-        if (reportId == null) throw new ValidationException("Ошибка: reportId не может быть null");
+        if (reportId == null) {
+            throw new ValidationException("Ошибка: reportId не может быть null");
+        }
+
         Report report = reportRepository.findById(reportId);
         if (report == null) {
             throw new ValidationException("Ошибка: отчет с id=" + reportId + " не найден");
         }
+
         return report;
     }
+
     @Override
     public void deleteReport(UUID reportId) {
         Report report = getReportById(reportId);
@@ -89,21 +97,26 @@ public class ReportServiceImpl implements ReportService {
         Validator.validateReportLine(line);
         reportLineRepository.save(line);
         report.setUpdatedAt(Instant.now());
+        reportRepository.save(report);
         return line;
     }
 
     @Override
     public Set<ReportLine> getLinesByReportId(UUID reportId) {
-        getReportById(reportId); // Проверяем, существует ли отчет
+        getReportById(reportId);
         return reportLineRepository.findByReportId(reportId);
     }
 
     private ReportLine getLineById(UUID lineId) {
-        if (lineId == null) throw new ValidationException("Ошибка: lineId не может быть null");
+        if (lineId == null) {
+            throw new ValidationException("Ошибка: lineId не может быть null");
+        }
+
         ReportLine line = reportLineRepository.findById(lineId);
         if (line == null) {
             throw new ValidationException("Ошибка: строка с id=" + lineId + " не найдена");
         }
+
         return line;
     }
 
@@ -116,13 +129,20 @@ public class ReportServiceImpl implements ReportService {
             throw new ValidationException("Ошибка: можно изменять строки только в отчете со статусом DRAFT.");
         }
 
-        if (newParam != null) line.setParam(newParam);
-        if (newValue != null) line.setValue(newValue);
-        if (newUnit != null) line.setUnit(newUnit);
+        if (newParam != null) {
+            line.setParam(newParam);
+        }
+        if (newValue != null) {
+            line.setValue(newValue);
+        }
+        if (newUnit != null) {
+            line.setUnit(newUnit);
+        }
 
         line.setUpdatedAt(Instant.now());
         Validator.validateReportLine(line);
         report.setUpdatedAt(Instant.now());
+        reportRepository.save(report);
     }
 
     @Override
@@ -136,31 +156,87 @@ public class ReportServiceImpl implements ReportService {
 
         reportLineRepository.delete(line);
         report.setUpdatedAt(Instant.now());
+        reportRepository.save(report);
     }
 
     @Override
     public void finalizeReport(UUID reportId) {
         Report report = getReportById(reportId);
+
         if (report.getStatus() != ReportStatus.DRAFT) {
             throw new ValidationException("Ошибка: можно финализировать только DRAFT отчет.");
         }
+
         report.setStatus(ReportStatus.FINAL);
         report.setUpdatedAt(Instant.now());
         Validator.validateReport(report);
+        reportRepository.save(report);
     }
 
     @Override
     public void signReport(UUID reportId, String username) {
         Report report = getReportById(reportId);
+
         if (report.getStatus() == ReportStatus.DRAFT) {
             throw new ValidationException("Ошибка: сначала сделайте finalize.");
         }
+
         if (report.getStatus() == ReportStatus.SIGNED) {
             throw new ValidationException("Ошибка: отчет уже подписан.");
         }
+
         report.setStatus(ReportStatus.SIGNED);
         report.setSignedBy(username);
         report.setUpdatedAt(Instant.now());
         Validator.validateReport(report);
+        reportRepository.save(report);
+    }
+
+    @Override
+    public void updateReportName(UUID id, String newName) {
+        if (id == null) {
+            throw new ValidationException("Ошибка: id не может быть null");
+        }
+
+        if (newName == null || newName.isBlank()) {
+            throw new ValidationException("Ошибка: название отчета не может быть пустым");
+        }
+
+        Report report = getReportById(id);
+
+        if (report.getStatus() != ReportStatus.DRAFT) {
+            throw new ValidationException("Ошибка: можно изменять название только у отчета со статусом DRAFT.");
+        }
+
+        report.setName(newName.trim());
+        report.setUpdatedAt(Instant.now());
+
+        Validator.validateReport(report);
+        reportRepository.save(report);
+    }
+
+    @Override
+    public void replaceAll(List<Report> reports) {
+        Set<ReportLine> allLines = reportLineRepository.findAll();
+        for (ReportLine line : allLines) {
+            reportLineRepository.delete(line);
+        }
+
+        Set<Report> allReports = reportRepository.findAll();
+        for (Report report : allReports) {
+            reportRepository.delete(report);
+        }
+
+        if (reports != null) {
+            for (Report report : reports) {
+                reportRepository.save(report);
+                if (report.getLines() != null) {
+                    for (ReportLine line : report.getLines()) {
+                        line.setReportId(report.getId());
+                        reportLineRepository.save(line);
+                    }
+                }
+            }
+        }
     }
 }

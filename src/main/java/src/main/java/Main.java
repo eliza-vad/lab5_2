@@ -1,76 +1,112 @@
 package src.main.java;
 
-import command.*;
+import command.Command;
+import command.CommandRegistry;
+import command.ExitCommand;
+import domain.Report;
 import repository.InMemoryReportLineRepository;
 import repository.InMemoryReportRepository;
 import repository.ReportLineRepository;
 import repository.ReportRepository;
 import service.ReportService;
 import service.ReportServiceImpl;
-import validation.ValidationException;
+import storage.FileStorage;
+import storage.ValidationException;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
-    // вписываем зависимости классов и интерфуйсов
-    private static final ReportRepository reportRepo = new InMemoryReportRepository();
-    private static final ReportLineRepository lineRepo = new InMemoryReportLineRepository();
-    private static final ReportService service = new ReportServiceImpl(reportRepo, lineRepo);
-
-    private static final CommandRegistry registry = new CommandRegistry();
-
     public static void main(String[] args) {
+        ReportRepository reportRepo = new InMemoryReportRepository();
+        ReportLineRepository lineRepo = new InMemoryReportLineRepository();
+        ReportService reportService = new ReportServiceImpl(reportRepo, lineRepo);
+        FileStorage fileStorage = new FileStorage();
 
-        registry.register("rep_show", new ShowReportCommand(service));
-        registry.register("rep_sign", new SignReportCommand(service));
-        registry.register("rep_addline", new AddReportLineCommand(service));
-        registry.register("rep_lines", new ShowReportLinesCommand(service));
-        registry.register("rep_delline", new DeleteReportLineCommand(service));
-        registry.register("rep_upd_line", new UpdateReportLineCommand(service));
-        registry.register("rep_finalize", new FinalizeReportCommand(service));
-        registry.register("rep_export", new ExportReportCommand(service));
-        registry.register("rep_create_sample", new CreateSampleReportCommand(service));
-        registry.register("rep_list", new ListReportsCommand(service));
-        registry.register("rep_delete", new DeleteReportCommand(service));
-        registry.register("exit", new ExitCommand());
-        registry.register("help", new HelpCommand(registry.getAllCommands()));
+        if (args.length > 0) {
+            loadInitialData(args[0], fileStorage, reportService);
+        }
 
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Система управления отчетами (Domain 6). Введите help для списка команд.");
+        CommandRegistry registry = new CommandRegistry(reportService, fileStorage);
+        runMainLoop(registry);
+    }
 
-        while (true) {
-            System.out.print("> ");
-            String input = scanner.nextLine().trim();
-            if (input.isEmpty()) continue;
+    private static void loadInitialData(String filePath, FileStorage fileStorage, ReportService reportService) {
+        try {
+            List<Report> reports = fileStorage.load(filePath);
+            reportService.replaceAll(reports);
+            System.out.println("✅ Загружены данные из файла: " + filePath);
+            System.out.println("   Загружено отчетов: " + reports.size());
+        } catch (Exception e) {
+            System.err.println("⚠️ Не удалось загрузить файл: " + e.getMessage());
+            System.err.println("   Продолжаем с пустой коллекцией");
+        }
+    }
 
-            String[] parts = input.split(" ");
-            String commandName = parts[0];
+    private static void runMainLoop(CommandRegistry registry) {
+        try (Scanner scanner = new Scanner(System.in)) {
+            printWelcomeMessage();
 
-            try {
-                Command command = registry.getCommand(commandName);
-                if (command == null) {
-                    System.out.println("Ошибка: неизвестная команда. Введите help для списка команд.");
+            while (true) {
+                System.out.print("> ");
+                String input = scanner.nextLine().trim();
+
+                if (input.isEmpty()) {
                     continue;
                 }
 
-                command.execute(parts, scanner);
+                String[] parts = input.split("\\s+");
+                String commandName = parts[0].toLowerCase();
 
-            } catch (ValidationException e) {
-                String code = e.getErrorCode();
-                String msg = e.getUserMessage();
-                String field = e.getFieldName();
+                Command command = registry.getCommand(commandName);
 
-                if (code != null && !code.equals("GENERAL_ERROR")) {
-                    System.out.println("Ошибка валидации в поле [" + field + "]: " + msg + " (Код: " + code + ")");
-                } else {
-                    System.out.println(msg);
+                if (command == null) {
+                    System.err.println("❌ Ошибка: неизвестная команда. Введите 'help' для списка команд.");
+                    continue;
                 }
-            } catch (IllegalArgumentException e) {
-                System.out.println("Ошибка формата ввода: проверьте правильность введенных данных (ID должен быть в формате UUID).");
-            } catch (Exception e) {
-                System.out.println("Произошла системная ошибка: " + e.getMessage());
+
+                if (command instanceof ExitCommand) {
+                    System.out.println("👋 До свидания!");
+                    break;
+                }
+
+                executeCommand(command, parts, scanner);
             }
         }
+    }
+
+    private static void executeCommand(Command command, String[] parts, Scanner scanner) {
+        try {
+            command.execute(parts, scanner);
+        } catch (ValidationException e) {
+            handleValidationException(e);
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Ошибка формата ввода: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Произошла системная ошибка: " + e.getMessage());
+        }
+    }
+
+    private static void handleValidationException(ValidationException e) {
+        String code = e.getErrorCode();
+        String msg = e.getUserMessage();
+        String field = e.getFieldName();
+
+        if (code != null && !"GENERAL_ERROR".equals(code) && field != null && !field.isBlank()) {
+            System.err.println("❌ Ошибка валидации в поле [" + field + "]: " + msg + " (Код: " + code + ")");
+        } else {
+            System.err.println("❌ " + msg);
+        }
+    }
+
+    private static void printWelcomeMessage() {
+        System.out.println("╔══════════════════════════════════════════════════════════════╗");
+        System.out.println("║         СИСТЕМА УПРАВЛЕНИЯ ОТЧЕТАМИ (DOMAIN 6)               ║");
+        System.out.println("╠══════════════════════════════════════════════════════════════╣");
+        System.out.println("║  Введите 'help' для списка команд                            ║");
+        System.out.println("║  Команды save/load доступны для работы с XML файлами         ║");
+        System.out.println("╚══════════════════════════════════════════════════════════════╝");
+        System.out.println();
     }
 }
