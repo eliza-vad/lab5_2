@@ -36,10 +36,10 @@ public class Main {
         try {
             List<Report> reports = fileStorage.load(filePath);
             reportService.replaceAll(reports);
-            System.out.println("✅ Загружены данные из файла: " + filePath);
+            System.out.println(" Загружены данные из файла: " + filePath);
             System.out.println("   Загружено отчетов: " + reports.size());
         } catch (Exception e) {
-            System.err.println("⚠️ Не удалось загрузить файл: " + e.getMessage());
+            System.err.println(" Не удалось загрузить файл: " + e.getMessage());
             System.err.println("   Продолжаем с пустой коллекцией");
         }
     }
@@ -62,12 +62,12 @@ public class Main {
                 Command command = registry.getCommand(commandName);
 
                 if (command == null) {
-                    System.err.println("❌ Ошибка: неизвестная команда. Введите 'help' для списка команд.");
+                    System.err.println(" Ошибка: неизвестная команда. Введите 'help' для списка команд.");
                     continue;
                 }
 
                 if (command instanceof ExitCommand) {
-                    System.out.println("👋 До свидания!");
+                    System.out.println(" До свидания!");
                     break;
                 }
 
@@ -82,9 +82,9 @@ public class Main {
         } catch (ValidationException e) {
             handleValidationException(e);
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Ошибка формата ввода: " + e.getMessage());
+            System.err.println(" Ошибка формата ввода: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("❌ Произошла системная ошибка: " + e.getMessage());
+            System.err.println(" Произошла системная ошибка: " + e.getMessage());
         }
     }
 
@@ -94,7 +94,7 @@ public class Main {
         String field = e.getFieldName();
 
         if (code != null && !"GENERAL_ERROR".equals(code) && field != null && !field.isBlank()) {
-            System.err.println("❌ Ошибка валидации в поле [" + field + "]: " + msg + " (Код: " + code + ")");
+            System.err.println(" Ошибка валидации в поле [" + field + "]: " + msg + " (Код: " + code + ")");
         } else {
             System.err.println("❌ " + msg);
         }

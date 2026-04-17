@@ -13,7 +13,6 @@ public class TestXML {
         try {
             XmlReportSerializer serializer = new XmlReportSerializer();
 
-            // Создаем тестовый отчет
             Report report = new Report();
             report.setId(UUID.randomUUID());
             report.setName("Тестовый отчет");
@@ -23,7 +22,6 @@ public class TestXML {
             report.setCreatedAt(Instant.now());
             report.setUpdatedAt(Instant.now());
 
-            // Создаем строку отчета
             ReportLine line = new ReportLine();
             line.setId(UUID.randomUUID());
             line.setReportId(report.getId());
@@ -33,19 +31,15 @@ public class TestXML {
             line.setCreatedAt(Instant.now());
             line.setUpdatedAt(Instant.now());
 
-            // Добавляем строку к отчету
             report.setLines(List.of(line));
 
-            // Сохраняем в файл
             String filePath = "test.xml";
             serializer.saveToFile(List.of(report), filePath);
-            System.out.println("✅ Сохранено в " + filePath);
+            System.out.println(" Сохранено в " + filePath);
 
-            // Загружаем из файла
             List<Report> loaded = serializer.loadFromFile(filePath);
-            System.out.println("✅ Загружено отчетов: " + loaded.size());
+            System.out.println(" Загружено отчетов: " + loaded.size());
 
-            // Выводим информацию о загруженном отчете
             if (!loaded.isEmpty()) {
                 Report loadedReport = loaded.get(0);
                 System.out.println("\n=== ИНФОРМАЦИЯ О ЗАГРУЖЕННОМ ОТЧЕТЕ ===");
@@ -71,7 +65,7 @@ public class TestXML {
             }
 
         } catch (Exception e) {
-            System.err.println("❌ Ошибка: " + e.getMessage());
+            System.err.println(" Ошибка: " + e.getMessage());
             e.printStackTrace();
         }
     }

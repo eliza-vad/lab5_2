@@ -21,7 +21,7 @@ public class LoadCommand implements Command {
     @Override
     public void execute(String[] args, Scanner scanner) throws Exception {
         if (args.length < 1) {
-            System.err.println("❌ Укажите путь к файлу: load <path>");
+            System.err.println(" Укажите путь к файлу: load <path>");
             System.err.println("   Пример: load reports.xml");
             return;
         }
@@ -31,13 +31,13 @@ public class LoadCommand implements Command {
         try {
             List<Report> loaded = storage.load(path);
             reportService.replaceAll(loaded);
-            System.out.println("✅ Загружено " + loaded.size() + " отчетов из файла: " + path);
+            System.out.println(" Загружено " + loaded.size() + " отчетов из файла: " + path);
         } catch (IOException e) {
-            System.err.println("❌ Ошибка чтения файла: " + e.getMessage());
+            System.err.println(" Ошибка чтения файла: " + e.getMessage());
             System.err.println("   Проверьте, что файл существует и доступен для чтения");
         } catch (ValidationException e) {
-            System.err.println("❌ Ошибка валидации данных: " + e.getMessage());
-            System.err.println("⚠️ Данные в памяти НЕ были изменены");
+            System.err.println(" Ошибка валидации данных: " + e.getMessage());
+            System.err.println(" Данные в памяти НЕ были изменены");
         }
     }
 

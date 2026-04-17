@@ -41,13 +41,13 @@ public class SaveCommand implements Command {
         File savedFile = new File(filePath);
 
         if (!savedFile.exists() || !savedFile.isFile()) {
-            System.out.println("❌ Файл не был создан: " + filePath);
+            System.out.println(" Файл не был создан: " + filePath);
             return;
         }
 
         boolean isXml = isValidXml(savedFile);
 
-        System.out.println("✅ Данные успешно сохранены.");
+        System.out.println(" Данные успешно сохранены.");
         System.out.println("   Имя файла: " + savedFile.getName());
         System.out.println("   Полный путь: " + savedFile.getAbsolutePath());
         System.out.println("   Размер: " + savedFile.length() + " байт");
