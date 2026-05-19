@@ -1,6 +1,6 @@
 package ui.main;
 
-import domain.Report;
+import app.domain.Report;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 

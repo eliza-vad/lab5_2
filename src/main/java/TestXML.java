@@ -1,8 +1,8 @@
-import domain.MeasurementParam;
-import domain.Report;
-import domain.ReportLine;
-import domain.ReportStatus;
-import storage.XmlReportSerializer;
+import app.domain.MeasurementParam;
+import app.domain.Report;
+import app.domain.ReportLine;
+import app.domain.ReportStatus;
+import app.storage.XmlReportSerializer;
 
 import java.time.Instant;
 import java.util.List;

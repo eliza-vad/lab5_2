@@ -8,16 +8,18 @@ import ui.main.MainController;
 public class MainFxApp extends Application {
 
     @Override
-    public void start(Stage stage) {
-        AppBootstrap bootstrap = new AppBootstrap();
-        MainController controller = bootstrap.createMainController(stage);
+    public void start(Stage primaryStage) {
+        app.AppBootstrap bootstrap = new app.AppBootstrap();
+        app.service.AuthService authService = bootstrap.getAuthService();
 
-        Scene scene = new Scene(controller.getView().getRoot(), 1400, 700);
-        stage.setTitle("Система управления отчетами");
-        stage.setScene(scene);
-        stage.show();
+        ui.login.LoginWindow.display(authService, () -> {
+            ui.main.MainController controller = bootstrap.createMainController(primaryStage);
 
-        controller.onStart();
+            Scene scene = new Scene(controller.getView().getRoot(), 800, 600);
+            primaryStage.setScene(scene);
+            primaryStage.setTitle("Система отчетов (БД PostgreSQL)");
+            primaryStage.show();
+        });
     }
 
     public static void main(String[] args) {

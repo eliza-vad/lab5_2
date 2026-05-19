@@ -1,7 +1,7 @@
 package validation;
 
-import domain.Report;
-import domain.ReportLine;
+import app.domain.Report;
+import app.domain.ReportLine;
 
 public class Validator {
 

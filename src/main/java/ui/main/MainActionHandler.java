@@ -1,16 +1,14 @@
 package ui.main;
 
-import domain.MeasurementParam;
-import domain.Report;
-import domain.ReportLine;
+import app.domain.MeasurementParam;
+import app.domain.Report;
+import app.domain.ReportLine;
+import app.service.AuthService;
+import app.service.ReportService;
 import javafx.concurrent.Task;
-import storage.FileStorage;
-import service.ReportService;
 import ui.dialog.DialogService;
-import ui.file.FileDialogService;
 import ui.task.FxTaskRunner;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,26 +19,23 @@ import java.util.UUID;
 public class MainActionHandler {
 
     private final ReportService reportService;
-    private final FileStorage fileStorage;
     private final DialogService dialogService;
-    private final FileDialogService fileDialogService;
     private final FxTaskRunner taskRunner;
     private final MainUiState uiState;
+    private final AuthService authService;
 
     public MainActionHandler(
             ReportService reportService,
-            FileStorage fileStorage,
             DialogService dialogService,
-            FileDialogService fileDialogService,
             FxTaskRunner taskRunner,
-            MainUiState uiState
+            MainUiState uiState,
+            AuthService authService
     ) {
         this.reportService = reportService;
-        this.fileStorage = fileStorage;
         this.dialogService = dialogService;
-        this.fileDialogService = fileDialogService;
         this.taskRunner = taskRunner;
         this.uiState = uiState;
+        this.authService = authService;
     }
 
     public void refresh(MainView view) {
@@ -58,6 +53,11 @@ public class MainActionHandler {
     }
 
     public void createSample(MainView view) {
+        if (!authService.isAuthorized()) {
+            dialogService.showError("Ошибка: Создавать отчеты могут только авторизованные пользователи.");
+            return;
+        }
+
         Optional<String> nameResult = dialogService.askText(
                 "Создание отчета", "Создать тестовый отчет", "Введите название отчета:", "Тестовый отчет"
         );
@@ -65,43 +65,40 @@ public class MainActionHandler {
             return;
         }
 
-        Optional<String> userResult = dialogService.askText(
-                "Создание отчета", "Создать тестовый отчет", "Введите имя пользователя:", "user"
-        );
-        if (userResult.isEmpty() || userResult.get().isBlank()) {
-            return;
-        }
-
         String reportName = nameResult.get().trim();
-        String username = userResult.get().trim();
+        String username = authService.getCurrentUser().getLogin();
+        Integer ownerId = authService.getCurrentUser().getId();
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
                 reportService.createSampleReport(UUID.randomUUID(), reportName, username);
+                for(Report r : reportService.getAllReports()) {
+                    if(r.getName().equals(reportName) && r.getOwnerId() == null) {
+                        r.setOwnerId(ownerId);
+                    }
+                }
                 return null;
             }
         };
 
         taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Отчет создан. Нажми Refresh, чтобы увидеть изменения."));
+                () -> dialogService.showInfo("Отчет создан пользователем " + username + ". Нажми Refresh."));
     }
 
     public void editSelectedReport(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: У вас нет прав на изменение этого отчета.");
             return;
         }
 
         Optional<String> result = dialogService.askText(
-                "Редактирование отчета",
-                "Изменить название отчета",
-                "Новое название:",
-                safe(getName(selected))
+                "Редактирование отчета", "Изменить название отчета", "Новое название:", safe(getName(selected))
         );
-        if (result.isEmpty() || result.get().isBlank()) {
-            return;
-        }
+        if (result.isEmpty() || result.get().isBlank()) return;
 
         String newName = result.get().trim();
 
@@ -114,19 +111,20 @@ public class MainActionHandler {
         };
 
         taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Название изменено. Нажми Refresh, чтобы обновить список."));
+                () -> dialogService.showInfo("Название изменено. Нажми Refresh."));
     }
 
     public void deleteSelectedReport(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: У вас нет прав на удаление этого отчета.");
             return;
         }
 
         boolean confirmed = dialogService.confirm("Подтверждение", "Удаление отчета", "Удалить выбранный отчет?");
-        if (!confirmed) {
-            return;
-        }
+        if (!confirmed) return;
 
         Task<Void> task = new Task<>() {
             @Override
@@ -137,18 +135,18 @@ public class MainActionHandler {
         };
 
         taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Отчет удален. Нажми Refresh, чтобы обновить список."));
+                () -> dialogService.showInfo("Отчет удален. Нажми Refresh."));
     }
 
     public void showDetails(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
-            return;
-        }
+        if (selected == null) return;
 
         StringBuilder text = new StringBuilder();
         text.append("ID: ").append(selected.getId()).append("\n");
         text.append("Название: ").append(safe(getName(selected))).append("\n");
+        text.append("Владелец ID: ").append(selected.getOwnerId() != null ? selected.getOwnerId() : "нет").append("\n");
+        text.append("Создатель логин: ").append(selected.getOwnerUsername() != null ? selected.getOwnerUsername() : "нет").append("\n");
         text.append("Статус: ").append(String.valueOf(selected.getStatus())).append("\n");
         text.append("Создан: ").append(String.valueOf(selected.getCreatedAt())).append("\n");
         text.append("Обновлен: ").append(String.valueOf(selected.getUpdatedAt())).append("\n");
@@ -158,7 +156,10 @@ public class MainActionHandler {
 
     public void finalizeSelectedReport(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: Только владелец может финализировать отчет.");
             return;
         }
 
@@ -171,21 +172,17 @@ public class MainActionHandler {
         };
 
         taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Отчет финализирован. Нажми Refresh, чтобы обновить список."));
+                () -> dialogService.showInfo("Отчет финализирован. Нажми Refresh."));
     }
 
     public void signSelectedReport(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
-            return;
-        }
+        if (selected == null) return;
 
         Optional<String> result = dialogService.askText(
-                "Подписание отчета", "Подписать отчет", "Введите имя пользователя:", "user"
+                "Подписание отчета", "Подписать отчет", "Введите ваше имя для подписи:", "user"
         );
-        if (result.isEmpty() || result.get().isBlank()) {
-            return;
-        }
+        if (result.isEmpty() || result.get().isBlank()) return;
 
         String username = result.get().trim();
 
@@ -198,33 +195,27 @@ public class MainActionHandler {
         };
 
         taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Отчет подписан. Нажми Refresh, чтобы обновить список."));
+                () -> dialogService.showInfo("Отчет подписан. Нажми Refresh."));
     }
 
     public void showReportLines(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
-            return;
-        }
+        if (selected == null) return;
 
         try {
             Set<ReportLine> lines = reportService.getLinesByReportId(selected.getId());
-
             StringBuilder text = new StringBuilder();
             if (lines.isEmpty()) {
                 text.append("У отчета нет строк.");
             } else {
                 int i = 1;
                 for (ReportLine line : lines) {
-                    text.append(i++)
-                            .append(") ID=").append(line.getId())
+                    text.append(i++).append(") ID=").append(line.getId())
                             .append(", PARAM=").append(line.getParam())
                             .append(", VALUE=").append(line.getValue())
-                            .append(", UNIT=").append(line.getUnit())
-                            .append("\n");
+                            .append(", UNIT=").append(line.getUnit()).append("\n");
                 }
             }
-
             dialogService.showInfo(text.toString());
         } catch (Exception e) {
             dialogService.showError("Не удалось показать строки отчета: " + safeMessage(e));
@@ -233,7 +224,10 @@ public class MainActionHandler {
 
     public void addReportLine(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: У вас нет прав на изменение этого отчета.");
             return;
         }
 
@@ -244,19 +238,12 @@ public class MainActionHandler {
         }
 
         Optional<MeasurementParam> paramResult = dialogService.askChoice(
-                "Добавление строки", "Выбери параметр", "Параметр:",
-                Arrays.asList(params), params[0]
+                "Добавление строки", "Выбери параметр", "Параметр:", Arrays.asList(params), params[0]
         );
-        if (paramResult.isEmpty()) {
-            return;
-        }
+        if (paramResult.isEmpty()) return;
 
-        Optional<String> valueResult = dialogService.askText(
-                "Добавление строки", "Введите значение", "Value:", "0"
-        );
-        if (valueResult.isEmpty() || valueResult.get().isBlank()) {
-            return;
-        }
+        Optional<String> valueResult = dialogService.askText("Добавление строки", "Введите значение", "Value:", "0");
+        if (valueResult.isEmpty() || valueResult.get().isBlank()) return;
 
         double value;
         try {
@@ -266,12 +253,8 @@ public class MainActionHandler {
             return;
         }
 
-        Optional<String> unitResult = dialogService.askText(
-                "Добавление строки", "Введите единицу измерения", "Unit:", "unit"
-        );
-        if (unitResult.isEmpty() || unitResult.get().isBlank()) {
-            return;
-        }
+        Optional<String> unitResult = dialogService.askText("Добавление строки", "Введите единицу измерения", "Unit:", "unit");
+        if (unitResult.isEmpty() || unitResult.get().isBlank()) return;
 
         String unit = unitResult.get().trim();
         MeasurementParam param = paramResult.get();
@@ -284,13 +267,15 @@ public class MainActionHandler {
             }
         };
 
-        taskRunner.run(task, view.getProgressIndicator(),
-                () -> dialogService.showInfo("Строка добавлена."));
+        taskRunner.run(task, view.getProgressIndicator(), () -> dialogService.showInfo("Строка добавлена."));
     }
 
     public void editReportLine(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: У вас нет прав на изменение этого отчета.");
             return;
         }
 
@@ -303,35 +288,20 @@ public class MainActionHandler {
 
             List<ReportLine> lineList = new ArrayList<>(lines);
             ReportLine selectedLine = dialogService.askChoice(
-                    "Редактирование строки", "Выбери строку", "Строка:",
-                    lineList, lineList.get(0)
+                    "Редактирование строки", "Выбери строку", "Строка:", lineList, lineList.get(0)
             ).orElse(null);
-
-            if (selectedLine == null) {
-                return;
-            }
+            if (selectedLine == null) return;
 
             MeasurementParam[] params = MeasurementParam.values();
-            if (params.length == 0) {
-                dialogService.showError("Справочник MeasurementParam пуст.");
-                return;
-            }
-
             MeasurementParam newParam = dialogService.askChoice(
-                    "Редактирование строки", "Выбери новый параметр", "Параметр:",
-                    Arrays.asList(params), selectedLine.getParam()
+                    "Редактирование строки", "Выбери новый параметр", "Параметр:", Arrays.asList(params), selectedLine.getParam()
             ).orElse(null);
-            if (newParam == null) {
-                return;
-            }
+            if (newParam == null) return;
 
             Optional<String> valueResult = dialogService.askText(
-                    "Редактирование строки", "Введите новое значение", "Value:",
-                    String.valueOf(selectedLine.getValue())
+                    "Редактирование строки", "Введите новое значение", "Value:", String.valueOf(selectedLine.getValue())
             );
-            if (valueResult.isEmpty() || valueResult.get().isBlank()) {
-                return;
-            }
+            if (valueResult.isEmpty() || valueResult.get().isBlank()) return;
 
             double newValue;
             try {
@@ -342,12 +312,9 @@ public class MainActionHandler {
             }
 
             Optional<String> unitResult = dialogService.askText(
-                    "Редактирование строки", "Введите новую единицу измерения", "Unit:",
-                    selectedLine.getUnit()
+                    "Редактирование строки", "Введите новую единицу измерения", "Unit:", selectedLine.getUnit()
             );
-            if (unitResult.isEmpty() || unitResult.get().isBlank()) {
-                return;
-            }
+            if (unitResult.isEmpty() || unitResult.get().isBlank()) return;
 
             String newUnit = unitResult.get().trim();
 
@@ -359,8 +326,7 @@ public class MainActionHandler {
                 }
             };
 
-            taskRunner.run(task, view.getProgressIndicator(),
-                    () -> dialogService.showInfo("Строка изменена."));
+            taskRunner.run(task, view.getProgressIndicator(), () -> dialogService.showInfo("Строка изменена."));
         } catch (Exception e) {
             dialogService.showError("Не удалось открыть редактирование строки: " + safeMessage(e));
         }
@@ -368,7 +334,10 @@ public class MainActionHandler {
 
     public void deleteReportLine(MainView view) {
         Report selected = requireSelectedReport(view);
-        if (selected == null) {
+        if (selected == null) return;
+
+        if (!authService.isAuthorized() || !authService.getCurrentUser().getId().equals(selected.getOwnerId())) {
+            dialogService.showError("Ошибка: У вас нет прав на изменение этого отчета.");
             return;
         }
 
@@ -381,20 +350,12 @@ public class MainActionHandler {
 
             List<ReportLine> lineList = new ArrayList<>(lines);
             ReportLine selectedLine = dialogService.askChoice(
-                    "Удаление строки", "Выбери строку для удаления", "Строка:",
-                    lineList, lineList.get(0)
+                    "Удаление строки", "Выбери строку для удаления", "Строка:", lineList, lineList.get(0)
             ).orElse(null);
+            if (selectedLine == null) return;
 
-            if (selectedLine == null) {
-                return;
-            }
-
-            boolean confirmed = dialogService.confirm(
-                    "Подтверждение", "Удаление строки отчета", "Удалить выбранную строку?"
-            );
-            if (!confirmed) {
-                return;
-            }
+            boolean confirmed = dialogService.confirm("Подтверждение", "Удаление строки отчета", "Удалить выбранную строку?");
+            if (!confirmed) return;
 
             Task<Void> task = new Task<>() {
                 @Override
@@ -404,44 +365,9 @@ public class MainActionHandler {
                 }
             };
 
-            taskRunner.run(task, view.getProgressIndicator(),
-                    () -> dialogService.showInfo("Строка удалена."));
+            taskRunner.run(task, view.getProgressIndicator(), () -> dialogService.showInfo("Строка удалена."));
         } catch (Exception e) {
             dialogService.showError("Не удалось удалить строку: " + safeMessage(e));
-        }
-    }
-
-    public void saveToXml() {
-        Optional<File> result = fileDialogService.chooseSaveXmlFile();
-        if (result.isEmpty()) {
-            return;
-        }
-
-        File file = result.get();
-
-        try {
-            List<Report> reports = new ArrayList<>(reportService.getAllReports());
-            fileStorage.save(file.getAbsolutePath(), reports);
-            dialogService.showInfo("XML сохранен: " + file.getName());
-        } catch (Exception e) {
-            dialogService.showError("Не удалось сохранить XML: " + safeMessage(e));
-        }
-    }
-
-    public void loadFromXml() {
-        Optional<File> result = fileDialogService.chooseOpenXmlFile();
-        if (result.isEmpty()) {
-            return;
-        }
-
-        File file = result.get();
-
-        try {
-            List<Report> reports = fileStorage.load(file.getAbsolutePath());
-            reportService.replaceAll(reports);
-            dialogService.showInfo("XML загружен: " + file.getName() + ". Нажми Refresh, чтобы обновить список.");
-        } catch (Exception e) {
-            dialogService.showError("Не удалось загрузить XML: " + safeMessage(e));
         }
     }
 

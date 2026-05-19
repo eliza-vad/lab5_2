@@ -1,6 +1,6 @@
 package ui.cell;
 
-import domain.Report;
+import app.domain.Report;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;

@@ -11,7 +11,7 @@ import javafx.scene.control.Separator;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
-import domain.Report;
+import app.domain.Report;
 
 public class MainView {
 
@@ -41,6 +41,13 @@ public class MainView {
         this.reportListView = new ListView<>(uiState.getReports());
         this.reportListView.setCellFactory(list -> new ReportCardCell());
 
+        this.reportListView.setStyle(
+                "-fx-selection-bar: #D3E3FD; " +
+                        "-fx-selection-bar-non-focused: #E8F0FE; " +
+                        "-fx-selection-bar-text: #000000; " +
+                        "-fx-background-color: transparent;"
+        );
+
         progressIndicator.setVisible(false);
         progressIndicator.setMaxSize(60, 60);
 
@@ -57,74 +64,72 @@ public class MainView {
         topBar.setPadding(new Insets(10));
         topBar.setAlignment(Pos.CENTER_LEFT);
 
+        topBar.setStyle(
+                "-fx-background-color: #0ABAB5; " +
+                        "-fx-border-color: #FFA0C0; " +
+                        "-fx-border-width: 6px; " +
+                        "-fx-border-radius: 5px; " +
+                        "-fx-background-radius: 5px;"
+        );
+
+        styleButtons(
+                refreshButton, createButton, editButton, deleteButton, detailsButton,
+                finalizeButton, signButton, showLinesButton, addLineButton,
+                editLineButton, deleteLineButton, saveButton, loadButton
+        );
+
         StackPane centerPane = new StackPane(reportListView, progressIndicator);
         centerPane.setPadding(new Insets(10));
 
+        centerPane.setStyle(
+                "-fx-background-color: #0ABAB5; " +
+                        "-fx-border-color: #FFA0C0; " +
+                        "-fx-border-width: 3px; " +
+                        "-fx-border-radius: 5px; " +
+                        "-fx-background-radius: 5px; " +
+                        "-fx-padding: 5px;"
+        );
+
+        root.setStyle("-fx-background-color: #F4F4F4;");
+
+        root.setPadding(new Insets(10));
+
         root.setTop(topBar);
         root.setCenter(centerPane);
+
+        BorderPane.setMargin(topBar, new Insets(0, 0, 10, 0));
     }
 
-    public BorderPane getRoot() {
-        return root;
+    private void styleButtons(Button... buttons) {
+        String buttonStyle =
+                "-fx-background-color: #FFFFFF; " +
+                        "-fx-text-fill: #000000; " +
+                        "-fx-border-color: #DDDDDD; " +
+                        "-fx-border-radius: 3px; " +
+                        "-fx-background-radius: 3px; " +
+                        "-fx-cursor: hand;";
+
+        for (Button btn : buttons) {
+            btn.setStyle(buttonStyle);
+            btn.setOnMouseEntered(e -> btn.setStyle(buttonStyle.replace("#FFFFFF", "#F0F0F0")));
+            btn.setOnMouseExited(e -> btn.setStyle(buttonStyle));
+        }
     }
 
-    public Button getRefreshButton() {
-        return refreshButton;
-    }
-
-    public Button getCreateButton() {
-        return createButton;
-    }
-
-    public Button getEditButton() {
-        return editButton;
-    }
-
-    public Button getDeleteButton() {
-        return deleteButton;
-    }
-
-    public Button getDetailsButton() {
-        return detailsButton;
-    }
-
-    public Button getFinalizeButton() {
-        return finalizeButton;
-    }
-
-    public Button getSignButton() {
-        return signButton;
-    }
-
-    public Button getShowLinesButton() {
-        return showLinesButton;
-    }
-
-    public Button getAddLineButton() {
-        return addLineButton;
-    }
-
-    public Button getEditLineButton() {
-        return editLineButton;
-    }
-
-    public Button getDeleteLineButton() {
-        return deleteLineButton;
-    }
-
-    public Button getSaveButton() {
-        return saveButton;
-    }
-
-    public Button getLoadButton() {
-        return loadButton;
-    }
-
-    public ListView<Report> getReportListView() {
-        return reportListView;
-    }
-
-    public ProgressIndicator getProgressIndicator() {
-        return progressIndicator;
-    }
+    public BorderPane getRoot() { return root; }
+    public Button getRefreshButton() { return refreshButton; }
+    public Button getCreateButton() { return createButton; }
+    public Button getEditButton() { return editButton; }
+    public Button getDeleteButton() { return deleteButton; }
+    public Button getDetailsButton() { return detailsButton; }
+    public Button getFinalizeButton() { return finalizeButton; }
+    public Button getSignButton() { return signButton; }
+    public Button getShowLinesButton() { return showLinesButton; }
+    public Button getAddLineButton() { return addLineButton; }
+    public Button getEditLineButton() { return editLineButton; }
+    public Button getDeleteLineButton() { return deleteLineButton; }
+    public Button getSaveButton() { return saveButton; }
+    public Button getLoadButton() { return loadButton; }
+    public ListView<Report> getReportListView() { return reportListView; }
+    public ProgressIndicator getProgressIndicator() { return progressIndicator; }
 }

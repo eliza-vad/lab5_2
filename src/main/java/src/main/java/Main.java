@@ -1,17 +1,17 @@
 package src.main.java;
 
-import command.Command;
-import command.CommandRegistry;
-import command.ExitCommand;
-import domain.Report;
-import repository.InMemoryReportLineRepository;
-import repository.InMemoryReportRepository;
-import repository.ReportLineRepository;
-import repository.ReportRepository;
-import service.ReportService;
-import service.ReportServiceImpl;
-import storage.FileStorage;
-import storage.ValidationException;
+import app.command.Command;
+import app.command.CommandRegistry;
+import app.command.ExitCommand;
+import app.domain.Report;
+import app.repository.InMemoryReportLineRepository;
+import app.repository.InMemoryReportRepository;
+import app.repository.ReportLineRepository;
+import app.repository.ReportRepository;
+import app.service.ReportService;
+import app.service.ReportServiceImpl;
+import app.storage.FileStorage;
+import app.storage.ValidationException;
 
 import java.util.List;
 import java.util.Scanner;

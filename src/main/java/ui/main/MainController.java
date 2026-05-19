@@ -26,8 +26,6 @@ public class MainController {
         view.getEditLineButton().setOnAction(e -> actionHandler.editReportLine(view));
         view.getDeleteLineButton().setOnAction(e -> actionHandler.deleteReportLine(view));
 
-        view.getSaveButton().setOnAction(e -> actionHandler.saveToXml());
-        view.getLoadButton().setOnAction(e -> actionHandler.loadFromXml());
     }
 
     public void onStart() {
